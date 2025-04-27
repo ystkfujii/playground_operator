@@ -1,0 +1,12 @@
+apiVersion: view.ystkfujii.github.io/v1
+kind: AppDeployer
+metadata:
+  labels:
+    app.kubernetes.io/name: playground-operator
+    app.kubernetes.io/managed-by: kustomize
+  name: appdeployer-sample-2
+spec:
+  serviceAccountName: "appdeployer-sample-2"
+  deployment:
+    replicas: 1
+    imageName: "nginx:1.27-alpine"

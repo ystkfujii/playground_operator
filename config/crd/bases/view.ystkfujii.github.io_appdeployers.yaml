@@ -1,0 +1,79 @@
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  annotations:
+    controller-gen.kubebuilder.io/version: v0.17.2
+  name: appdeployers.view.ystkfujii.github.io
+spec:
+  group: view.ystkfujii.github.io
+  names:
+    kind: AppDeployer
+    listKind: AppDeployerList
+    plural: appdeployers
+    singular: appdeployer
+  scope: Namespaced
+  versions:
+  - additionalPrinterColumns:
+    - jsonPath: .spec.serviceAccountName
+      name: ServiceAccountName
+      type: string
+    - jsonPath: .spec.deployment.replicas
+      name: Replicas
+      type: integer
+    name: v1
+    schema:
+      openAPIV3Schema:
+        description: AppDeployer is the Schema for the appdeployers API.
+        properties:
+          apiVersion:
+            description: |-
+              APIVersion defines the versioned schema of this representation of an object.
+              Servers should convert recognized schemas to the latest internal value, and
+              may reject unrecognized values.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#resources
+            type: string
+          kind:
+            description: |-
+              Kind is a string value representing the REST resource this object represents.
+              Servers may infer this from the endpoint the client submits requests to.
+              Cannot be updated.
+              In CamelCase.
+              More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds
+            type: string
+          metadata:
+            type: object
+          spec:
+            description: AppDeployerSpec defines the desired state of AppDeployer.
+            properties:
+              deployment:
+                properties:
+                  imageName:
+                    type: string
+                  replicas:
+                    default: 1
+                    format: int32
+                    maximum: 3
+                    minimum: 1
+                    type: integer
+                required:
+                - imageName
+                type: object
+              serviceAccountName:
+                type: string
+            required:
+            - deployment
+            type: object
+          status:
+            description: AppDeployerStatus defines the observed state of AppDeployer.
+            properties:
+              serviceAccountName:
+                type: string
+            required:
+            - serviceAccountName
+            type: object
+        type: object
+    served: true
+    storage: true
+    subresources:
+      status: {}

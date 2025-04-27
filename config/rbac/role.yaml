@@ -8,6 +8,7 @@ rules:
   - ""
   resources:
   - configmaps
+  - serviceaccounts
   - services
   verbs:
   - create
@@ -40,6 +41,7 @@ rules:
 - apiGroups:
   - view.ystkfujii.github.io
   resources:
+  - appdeployers
   - markdownviews
   verbs:
   - create
@@ -52,12 +54,14 @@ rules:
 - apiGroups:
   - view.ystkfujii.github.io
   resources:
+  - appdeployers/finalizers
   - markdownviews/finalizers
   verbs:
   - update
 - apiGroups:
   - view.ystkfujii.github.io
   resources:
+  - appdeployers/status
   - markdownviews/status
   verbs:
   - get

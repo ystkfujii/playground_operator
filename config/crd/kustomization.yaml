@@ -3,6 +3,7 @@
 # It should be run by config/default
 resources:
 - bases/view.ystkfujii.github.io_markdownviews.yaml
+- bases/view.ystkfujii.github.io_appdeployers.yaml
 # +kubebuilder:scaffold:crdkustomizeresource
 
 patches:

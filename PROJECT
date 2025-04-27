@@ -21,4 +21,13 @@ resources:
     defaulting: true
     validation: true
     webhookVersion: v1
+- api:
+    crdVersion: v1
+    namespaced: true
+  controller: true
+  domain: ystkfujii.github.io
+  group: view
+  kind: AppDeployer
+  path: github.com/ystkfujii/playground_operator/api/v1
+  version: v1
 version: "3"
