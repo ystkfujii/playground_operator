@@ -39,7 +39,7 @@ import (
 
 	viewv1 "github.com/ystkfujii/playground_operator/api/v1"
 	"github.com/ystkfujii/playground_operator/internal/controller"
-	webhookviewv1 "github.com/ystkfujii/playground_operator/internal/webhook/v1"
+	webhookv1 "github.com/ystkfujii/playground_operator/internal/webhook/v1"
 	// +kubebuilder:scaffold:imports
 )
 
@@ -212,7 +212,12 @@ func main() {
 	}
 	// nolint:goconst
 	if os.Getenv("ENABLE_WEBHOOKS") != "false" {
-		if err = webhookviewv1.SetupMarkdownViewWebhookWithManager(mgr); err != nil {
+		setupLog.Info("Registering webhooks to the webhook server")
+		if err = webhookv1.SetupMarkdownViewWebhookWithManager(mgr); err != nil {
+			setupLog.Error(err, "unable to create webhook", "webhook", "MarkdownView")
+			os.Exit(1)
+		}
+		if err = webhookv1.SetupAppdeployerWebhookWithManager(mgr); err != nil {
 			setupLog.Error(err, "unable to create webhook", "webhook", "MarkdownView")
 			os.Exit(1)
 		}

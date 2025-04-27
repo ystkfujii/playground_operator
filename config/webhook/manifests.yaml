@@ -10,6 +10,26 @@ webhooks:
     service:
       name: webhook-service
       namespace: system
+      path: /mutate-view-ystkfujii-github-io-v1-appdeployer
+  failurePolicy: Fail
+  name: mappdeployer-v1.kb.io
+  rules:
+  - apiGroups:
+    - view.ystkfujii.github.io
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - appdeployers
+  sideEffects: None
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
       path: /mutate-view-ystkfujii-github-io-v1-markdownview
   failurePolicy: Fail
   name: mmarkdownview-v1.kb.io
@@ -30,6 +50,26 @@ kind: ValidatingWebhookConfiguration
 metadata:
   name: validating-webhook-configuration
 webhooks:
+- admissionReviewVersions:
+  - v1
+  clientConfig:
+    service:
+      name: webhook-service
+      namespace: system
+      path: /validate-view-ystkfujii-github-io-v1-appdeployer
+  failurePolicy: Fail
+  name: vappdeployer-v1.kb.io
+  rules:
+  - apiGroups:
+    - view.ystkfujii.github.io
+    apiVersions:
+    - v1
+    operations:
+    - CREATE
+    - UPDATE
+    resources:
+    - appdeployers
+  sideEffects: None
 - admissionReviewVersions:
   - v1
   clientConfig:
