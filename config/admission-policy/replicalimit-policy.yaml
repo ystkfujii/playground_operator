@@ -1,0 +1,40 @@
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicy
+metadata:
+  name: replicalimit-policy.ystkfujii.dev
+spec:
+  failurePolicy: Fail
+  paramKind:
+    apiVersion: v1
+    kind: ConfigMap
+  matchConstraints:
+    resourceRules:
+    - apiGroups:   ["view.ystkfujii.github.io"]
+      apiVersions: ["v1"]
+      operations:  ["CREATE", "UPDATE"]
+      resources:   ["appdeployers"]
+  validations:
+    - expression: "object.spec.deployment.replicas <= int(params.data.maxReplicas)"
+      reason: Invalid
+
+---
+apiVersion: admissionregistration.k8s.io/v1
+kind: ValidatingAdmissionPolicyBinding
+metadata:
+  name: replicalimit-binding.ystkfujii.dev
+spec:
+  policyName: replicalimit-policy.ystkfujii.dev
+  validationActions: [Deny]
+  paramRef:
+    name: param
+    namespace: default
+    parameterNotFoundAction: Allow
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: param
+data:
+  maxReplicas: "4"

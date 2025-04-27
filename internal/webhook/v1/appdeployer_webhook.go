@@ -100,7 +100,7 @@ func (v *AppDeployerCustomValidator) ValidateUpdate(ctx context.Context, oldObj,
 	}
 	appdeployerlog.Info("Validation for AppDeployer upon update", "name", appDeployer.GetName())
 
-	if strings.Contains(appDeployer.Spec.ServiceAccountName, "denay") {
+	if strings.Contains(appDeployer.Spec.ServiceAccountName, "deny") {
 		errs = append(errs, field.Invalid(field.NewPath("spec").Child("serviceAccountName"), appDeployer.Spec.ServiceAccountName, "cannot be updated"))
 	}
 

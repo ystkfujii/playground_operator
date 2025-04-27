@@ -1,0 +1,20 @@
+validatingAdmissionPolicies:
+- ../replicalimit-policy.yaml
+resources:
+- appdeployer.yaml
+- configmap.yaml
+testSuites:
+- policy: replicalimit-policy.ystkfujii.dev
+  tests:
+  - object:
+      kind: AppDeployer
+      name: appdeployer-ok
+    param:
+      name: param
+    expect: admit
+  - object:
+      kind: AppDeployer
+      name: appdeployer-ko
+    param:
+      name: param
+    expect: deny

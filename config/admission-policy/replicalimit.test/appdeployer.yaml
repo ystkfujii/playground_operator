@@ -1,0 +1,20 @@
+---
+apiVersion: view.ystkfujii.github.io/v1
+kind: AppDeployer
+metadata:
+  name: appdeployer-ok
+spec:
+  serviceAccountName: appdeployer-ok
+  deployment:
+    replicas: 2
+    imageName: "nginx:1.27-alpine"
+---
+apiVersion: view.ystkfujii.github.io/v1
+kind: AppDeployer
+metadata:
+  name: appdeployer-ko
+spec:
+  serviceAccountName: appdeployer-ko
+  deployment:
+    replicas: 5
+    imageName: "nginx:1.27-alpine"

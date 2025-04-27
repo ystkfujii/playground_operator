@@ -8,5 +8,5 @@ metadata:
 spec:
   serviceAccountName: appdeployer-sample-2
   deployment:
-    replicas: 2
+    replicas: 1
     imageName: "nginx:1.27-alpine"
