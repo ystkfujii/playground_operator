@@ -51,7 +51,14 @@ var _ = Describe("MarkdownView Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
+					Spec: viewv1.MarkdownViewSpec{
+						Markdowns: map[string]string{
+							"SUMMARY.md": `summary`,
+							"page1.md":   `page1`,
+						},
+						Replicas:    3,
+						ViewerImage: "peaceiris/mdbook:0.4.10",
+					},
 				}
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}

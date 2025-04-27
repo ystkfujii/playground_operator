@@ -38,7 +38,7 @@ var _ = Describe("AppDeployer Controller", func() {
 
 		typeNamespacedName := types.NamespacedName{
 			Name:      resourceName,
-			Namespace: "default", // TODO(user):Modify as needed
+			Namespace: "default",
 		}
 		appdeployer := &viewv1.AppDeployer{}
 
@@ -51,8 +51,8 @@ var _ = Describe("AppDeployer Controller", func() {
 						Name:      resourceName,
 						Namespace: "default",
 					},
-					// TODO(user): Specify other spec details if needed.
 				}
+				resource.Spec.Deployment.ImageName = "nginx:latest"
 				Expect(k8sClient.Create(ctx, resource)).To(Succeed())
 			}
 		})
