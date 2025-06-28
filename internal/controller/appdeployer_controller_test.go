@@ -77,8 +77,88 @@ var _ = Describe("AppDeployer Controller", func() {
 				NamespacedName: typeNamespacedName,
 			})
 			Expect(err).NotTo(HaveOccurred())
-			// TODO(user): Add more specific assertions depending on your controller's reconciliation logic.
-			// Example: If you expect a certain status condition after reconciliation, verify it here.
+
+			By("Verifying the AppDeployer status conditions are set correctly")
+			Eventually(func() error {
+				err := k8sClient.Get(ctx, typeNamespacedName, appdeployer)
+				if err != nil {
+					return err
+				}
+				return nil
+			}).Should(Succeed())
+
+			Expect(appdeployer.Status.Conditions).To(HaveLen(2))
+
+			By("Checking Ready condition")
+			readyCondition := findCondition(appdeployer.Status.Conditions, "Ready")
+			Expect(readyCondition).NotTo(BeNil())
+			Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
+			Expect(readyCondition.Reason).To(Equal("ReconcileSuccessful"))
+			Expect(readyCondition.Message).To(Equal("AppDeployer reconciled successfully"))
+
+			By("Checking DeploymentReady condition")
+			deploymentReadyCondition := findCondition(appdeployer.Status.Conditions, "DeploymentReady")
+			Expect(deploymentReadyCondition).NotTo(BeNil())
+			Expect(deploymentReadyCondition.Status).To(Equal(metav1.ConditionTrue))
+			Expect(deploymentReadyCondition.Reason).To(Equal("DeploymentCreated"))
+			Expect(deploymentReadyCondition.Message).To(Equal("Deployment has been created and is ready"))
+
+			By("Verifying ServiceAccountName is set")
+			Expect(appdeployer.Status.ServiceAccountName).To(Equal(resourceName))
+		})
+
+		It("should maintain conditions across multiple reconciliation cycles", func() {
+			By("Reconciling the created resource multiple times")
+			controllerReconciler := &AppDeployerReconciler{
+				Client: k8sClient,
+				Scheme: k8sClient.Scheme(),
+			}
+
+			// First reconciliation
+			_, err := controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// Get the resource after first reconciliation
+			Eventually(func() error {
+				return k8sClient.Get(ctx, typeNamespacedName, appdeployer)
+			}).Should(Succeed())
+
+			firstReconcileConditions := make([]metav1.Condition, len(appdeployer.Status.Conditions))
+			copy(firstReconcileConditions, appdeployer.Status.Conditions)
+
+			// Second reconciliation
+			_, err = controllerReconciler.Reconcile(ctx, reconcile.Request{
+				NamespacedName: typeNamespacedName,
+			})
+			Expect(err).NotTo(HaveOccurred())
+
+			// Get the resource after second reconciliation
+			Eventually(func() error {
+				return k8sClient.Get(ctx, typeNamespacedName, appdeployer)
+			}).Should(Succeed())
+
+			By("Verifying conditions are still present and consistent")
+			Expect(appdeployer.Status.Conditions).To(HaveLen(2))
+
+			readyCondition := findCondition(appdeployer.Status.Conditions, "Ready")
+			Expect(readyCondition).NotTo(BeNil())
+			Expect(readyCondition.Status).To(Equal(metav1.ConditionTrue))
+
+			deploymentReadyCondition := findCondition(appdeployer.Status.Conditions, "DeploymentReady")
+			Expect(deploymentReadyCondition).NotTo(BeNil())
+			Expect(deploymentReadyCondition.Status).To(Equal(metav1.ConditionTrue))
 		})
 	})
 })
+
+// Helper function to find a condition by type
+func findCondition(conditions []metav1.Condition, conditionType string) *metav1.Condition {
+	for i := range conditions {
+		if conditions[i].Type == conditionType {
+			return &conditions[i]
+		}
+	}
+	return nil
+}

@@ -18,18 +18,21 @@ package controller
 
 import (
 	"context"
+	"time"
 
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/intstr"
 	appsv1apply "k8s.io/client-go/applyconfigurations/apps/v1"
 	corev1apply "k8s.io/client-go/applyconfigurations/core/v1"
 	metav1apply "k8s.io/client-go/applyconfigurations/meta/v1"
-	"k8s.io/utils/pointer"
+	"k8s.io/utils/ptr"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 	"sigs.k8s.io/controller-runtime/pkg/client/apiutil"
@@ -269,7 +272,7 @@ func (r *AppDeployerReconciler) reconcileDeployment(ctx context.Context, ad poap
 
 	err = r.Patch(ctx, patch, client.Apply, &client.PatchOptions{
 		FieldManager: "app-deployer-controller",
-		Force:        pointer.Bool(true),
+		Force:        ptr.To(true),
 	})
 
 	if err != nil {
@@ -285,15 +288,95 @@ func (r *AppDeployerReconciler) reconcileDeployment(ctx context.Context, ad poap
 func (r *AppDeployerReconciler) updateStatus(ctx context.Context, ad poappv1.AppDeployer) (ctrl.Result, error) {
 	logger := logf.FromContext(ctx).WithValues("name", ad.Name, "namespace", ad.Namespace)
 
-	ad.Status.ServiceAccountName = getServiceAccountName(ctx, ad)
+	newServiceAccountName := getServiceAccountName(ctx, ad)
 
-	if err := r.Status().Update(ctx, &ad); err != nil {
-		logger.Error(err, "unable to update AppDeployer status")
+	newConditions := []metav1.Condition{
+		{
+			Type:               "Ready",
+			Status:             metav1.ConditionTrue,
+			Reason:             "ReconcileSuccessful",
+			Message:            "AppDeployer reconciled successfully",
+			LastTransitionTime: metav1.NewTime(time.Now()),
+		},
+		{
+			Type:               "DeploymentReady",
+			Status:             metav1.ConditionTrue,
+			Reason:             "DeploymentCreated",
+			Message:            "Deployment has been created and is ready",
+			LastTransitionTime: metav1.NewTime(time.Now()),
+		},
+	}
+
+	if ad.Status.ServiceAccountName == newServiceAccountName && conditionsEqual(ad.Status.Conditions, newConditions) {
+		return ctrl.Result{}, nil
+	}
+
+	// Create a status-only patch object for Server-Side Apply
+	gvk := ad.GroupVersionKind()
+	if gvk.Empty() {
+		// Set default GVK if not available
+		gvk = schema.GroupVersionKind{
+			Group:   "view.ystkfujii.github.io",
+			Version: "v1",
+			Kind:    "AppDeployer",
+		}
+	}
+
+	patch := &unstructured.Unstructured{
+		Object: map[string]interface{}{
+			"apiVersion": gvk.GroupVersion().String(),
+			"kind":       gvk.Kind,
+			"metadata": map[string]interface{}{
+				"name":      ad.Name,
+				"namespace": ad.Namespace,
+			},
+			"status": map[string]interface{}{
+				"serviceAccountName": newServiceAccountName,
+				"conditions":         convertConditionsToUnstructured(newConditions),
+			},
+		},
+	}
+	patch.SetGroupVersionKind(gvk)
+
+	if err := r.Status().Patch(ctx, patch, client.Apply, &client.SubResourcePatchOptions{
+		PatchOptions: client.PatchOptions{
+			FieldManager: "app-deployer-controller",
+			Force:        ptr.To(true),
+		},
+	}); err != nil {
+		logger.Error(err, "unable to apply AppDeployer status")
 		return ctrl.Result{}, err
 	}
 
-	logger.Info("AppDeployer status updated successfully")
+	logger.Info("AppDeployer status updated successfully using Server-Side Apply")
 	return ctrl.Result{}, nil
+}
+
+func conditionsEqual(a, b []metav1.Condition) bool {
+	if len(a) != len(b) {
+		return false
+	}
+	for i := range a {
+		if a[i].Type != b[i].Type || a[i].Status != b[i].Status ||
+			a[i].Reason != b[i].Reason || a[i].Message != b[i].Message {
+			return false
+		}
+	}
+	return true
+}
+
+func convertConditionsToUnstructured(conditions []metav1.Condition) []interface{} {
+	result := make([]interface{}, len(conditions))
+	for i, condition := range conditions {
+		result[i] = map[string]interface{}{
+			"type":               condition.Type,
+			"status":             string(condition.Status),
+			"reason":             condition.Reason,
+			"message":            condition.Message,
+			"lastTransitionTime": condition.LastTransitionTime.Format(time.RFC3339),
+		}
+	}
+	return result
 }
 
 func getServiceAccountName(_ context.Context, ad poappv1.AppDeployer) string {

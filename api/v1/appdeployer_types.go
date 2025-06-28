@@ -40,6 +40,9 @@ type DeploymentSpec struct {
 // AppDeployerStatus defines the observed state of AppDeployer.
 type AppDeployerStatus struct {
 	ServiceAccountName string `json:"serviceAccountName"`
+	// +listType=map
+	// +listMapKey=type
+	Conditions []metav1.Condition `json:"conditions,omitempty"`
 }
 
 // +kubebuilder:object:root=true
